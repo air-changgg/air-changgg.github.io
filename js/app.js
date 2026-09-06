@@ -577,6 +577,14 @@ function updateNav() {
    ============================================= */
 function cloudinaryUrl(url, w) {
   if (!url || !url.startsWith('http') || !url.includes('cloudinary.com')) return url;
+  // Animated GIFs: Cloudinary's on-the-fly transformations cap out at 50
+  // total megapixels across all frames (width × height × frame count) and
+  // a 10MB output size — a GIF with many frames or a large frame size
+  // blows past either limit at almost any requested width, and the
+  // transformed URL then 400s with no fallback, leaving nothing visible.
+  // Deliver GIFs untransformed (full original bytes, browser scales them
+  // down via CSS) to sidestep both caps entirely.
+  if (/\.gif($|\?)/i.test(url)) return url;
   return url.replace('/upload/', `/upload/w_${w},f_auto/`);
 }
 
