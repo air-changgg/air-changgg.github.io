@@ -1633,6 +1633,7 @@ body:not(.editor-active) .info-proj-row[data-proj-link]:hover .itr-date {
   color: var(--ink2);
   line-height: 1.8;
   text-align: justify;
+  white-space: pre-wrap;
 }
 
 .meta-row {
