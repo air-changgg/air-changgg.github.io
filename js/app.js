@@ -1216,6 +1216,10 @@ function buildHeroV2HTML() {
    variant: background crossfade, the parameter control panel, and the
    cloth simulation itself. Safe to call after either a full renderHome()
    or a hero-only rebuildHeroV2(). */
+const EDITOR_ENABLED = location.hostname === 'localhost'
+  || location.hostname === '127.0.0.1'
+  || location.protocol === 'file:';
+
 function initHeroV2() {
   clearInterval(carouselTimer);
   let bgIdx = 0;
@@ -1290,6 +1294,7 @@ function initHeroV2() {
       </div>
     </div>`;
   heroEl.appendChild(ctrlEl);
+  if (!EDITOR_ENABLED) ctrlEl.style.display = 'none';
 
   if (clothConfig._panelOpen) document.getElementById('ctrl-panel').classList.add('open');
 
