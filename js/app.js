@@ -1162,6 +1162,20 @@ document.addEventListener('mouseleave', () => {
   projHoverRow = null;
   projHoverPreviewEl?.classList.remove('visible');
 });
+// Safety net for fast cursor movement: mousemove is sampled/coalesced by
+// the browser, so a quick flick off the row can land the cursor
+// somewhere new without ever firing a mousemove event exactly at the
+// boundary, leaving the preview stuck. mouseout is a guaranteed
+// transition event (fires the instant the hovered element actually
+// changes, independent of movement sampling) and bubbles, so it can be
+// delegated here without per-row rewiring — mirrors the mousemove
+// handler's own reasoning above.
+document.addEventListener('mouseout', e => {
+  if (projHoverRow && !(e.relatedTarget && projHoverRow.contains(e.relatedTarget))) {
+    projHoverRow = null;
+    projHoverPreviewEl?.classList.remove('visible');
+  }
+});
 
 window.addEventListener('resize', () => {
   // Gallery/statement/hero-title are normal document flow now (no more
