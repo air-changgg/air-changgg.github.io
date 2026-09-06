@@ -696,7 +696,7 @@
     if (!p) return;
     const others = projects.filter(x => x !== p);
     if (!others.length) return;
-    if (!confirm(`將「${p.name}」目前的相片牆位置、文字方塊位置、Credit 項目等套用到其他 ${others.length} 個專案，並覆蓋它們原有的內容。\n\n專案說明文字、相片牆的實際照片不會被覆蓋。確定要套用嗎？`)) return;
+    if (!confirm(`將「${p.name}」目前的相片牆位置、文字方塊位置、文字樣式（字級/粗細/顏色）、Credit 項目等套用到其他 ${others.length} 個專案，並覆蓋它們原有的內容。\n\n專案說明文字、相片牆的實際照片不會被覆蓋。確定要套用嗎？`)) return;
 
     const clone = v => JSON.parse(JSON.stringify(v));
     const reId  = arr => clone(arr).map(item => ({ ...item, id: Date.now() + Math.random() }));
@@ -711,6 +711,17 @@
       op.linkText   = p.linkText;
       op.linkUrl    = p.linkUrl;
       op.linkHidden = p.linkHidden;
+      // Typography — font size/weight/color for the statement, credit,
+      // subtitle and Full Project link text blocks. These are set
+      // per-project via their own text panels, so "apply layout to all
+      // projects" needs to copy them explicitly too, or every other
+      // project keeps whatever styling it happened to have before.
+      ['stFontSize', 'stWeight', 'stColor', 'stWidth',
+       'crFontSize', 'crWeight', 'crColor',
+       'linkFontSize', 'linkWeight', 'linkColor',
+       'subFontSize', 'subWeight', 'subColor'].forEach(k => {
+        if (p[k] !== undefined) op[k] = p[k];
+      });
     });
     saveAll();
     alert(`已套用到其他 ${others.length} 個專案！`);
