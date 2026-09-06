@@ -26,14 +26,24 @@ window.AIRCHANG_DEFAULT_CONTENT = {
   "airchang_carousel": "[\"gongdi\",\"our-land\",\"project-1779896701403\",\"project-1779896703021\",\"project-1779898568799\"]"
 };
 
-/* Fallback source for a brand-new visitor's empty localStorage — lets a
-   fresh deploy show this site's actual content instead of the bare
-   in-code defaults. Never overrides real localStorage data (see
-   storedItem below); only fills in when a key is entirely absent, which
-   is only true before this browser has ever saved anything here. */
+/* Fallback/override source for content synced from the owner's local
+   editing session.
+   - On localhost/file: (the real editing environment) real localStorage
+     always wins — this default only fills a key that has never been
+     saved here, so an in-progress local edit is never clobbered.
+   - On the deployed site, visitors can never edit at all (the editor UI
+     only renders on localhost — see EDITOR_ENABLED in editor.js/app.js),
+     so anything sitting in a visitor's localStorage is never their own
+     content, just a stale cache leftover from an earlier visit to an
+     older deploy. There it always wins over that stale cache, so every
+     visitor sees the latest synced content regardless of what they
+     happened to load before. */
 window.storedItem = function (key) {
+  var isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:';
+  var d = window.AIRCHANG_DEFAULT_CONTENT;
+  var hasDefault = d && Object.prototype.hasOwnProperty.call(d, key);
+  if (!isLocal && hasDefault) return d[key];
   var v = localStorage.getItem(key);
   if (v !== null) return v;
-  var d = window.AIRCHANG_DEFAULT_CONTENT;
-  return (d && Object.prototype.hasOwnProperty.call(d, key)) ? d[key] : null;
+  return hasDefault ? d[key] : null;
 };
