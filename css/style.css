@@ -1689,8 +1689,8 @@ body:not(.editor-active) .info-proj-row[data-proj-link]:hover .itr-date {
    is exactly what the handle is for), or in principle longer, in which
    case it wraps rather than overflowing since white-space isn't
    constrained to nowrap here. */
-.meta-label { color: var(--ink3); flex: 0 0 var(--meta-label-w, 5.5rem); }
-.meta-value { color: var(--ink); text-align: left; }
+.meta-label { color: var(--ink3); flex: 0 0 var(--meta-label-w, 5.5rem); white-space: pre-wrap; }
+.meta-value { color: var(--ink); text-align: left; white-space: pre-wrap; }
 
 .editor-active .detail-credit .meta-label,
 .editor-active .detail-credit .meta-value {
