@@ -460,6 +460,13 @@ const router = {
   routes: [],
   add(pattern, handler) { this.routes.push({ pattern, handler }); },
   resolve(pathname) {
+    // Any route change must drop the project-list hover preview
+    // unconditionally — leaving it up to the hover-tracking listeners
+    // alone means it can survive across a client-side navigation (e.g.
+    // detail page → detail page never touches a list row again to
+    // trigger the normal hide logic) and just sit there forever.
+    projHoverRow = null;
+    projHoverPreviewEl?.classList.remove('visible');
     for (const r of this.routes) {
       const m = pathname.match(r.pattern);
       if (m) { r.handler(m); return; }
@@ -1129,6 +1136,14 @@ document.addEventListener('mousemove', e => {
   const row = e.target.closest('.info-proj-row[data-proj-link]');
   if (row) {
     if (row !== projHoverRow) {
+      // Browsers resynthesize a mousemove (movementX/Y both 0, same
+      // clientX/Y as before) to recompute hover state after the DOM
+      // changes under a stationary cursor — e.g. a client-side route
+      // change that happens to land a project-list row exactly where the
+      // cursor already was. That fake event must never open the preview;
+      // only a mousemove with a real delta counts as the user actually
+      // moving onto the row.
+      if (e.movementX === 0 && e.movementY === 0) return;
       projHoverRow = row;
       const proj = projects.find(p => p.slug === row.dataset.projLink);
       const el = ensureProjHoverPreviewEl();
