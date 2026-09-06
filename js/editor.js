@@ -696,7 +696,7 @@
     if (!p) return;
     const others = projects.filter(x => x !== p);
     if (!others.length) return;
-    if (!confirm(`將「${p.name}」目前的相片牆位置、文字方塊位置、文字樣式（字級/粗細/顏色）、Credit 項目等套用到其他 ${others.length} 個專案，並覆蓋它們原有的內容。\n\n專案說明文字、相片牆的實際照片不會被覆蓋。確定要套用嗎？`)) return;
+    if (!confirm(`將「${p.name}」目前的相片牆位置、文字方塊位置、文字樣式（字級/粗細/顏色）等套用到其他 ${others.length} 個專案，並覆蓋它們原有的內容。\n\n專案說明文字、Credit 內文、相片牆的實際照片不會被覆蓋。確定要套用嗎？`)) return;
 
     const clone = v => JSON.parse(JSON.stringify(v));
     const reId  = arr => clone(arr).map(item => ({ ...item, id: Date.now() + Math.random() }));
@@ -704,7 +704,6 @@
     others.forEach(op => {
       if (p.albumPhotos)  op.albumPhotos  = reId(p.albumPhotos);
       if (p.customBlocks) op.customBlocks = reId(p.customBlocks);
-      if (p.meta)     op.meta     = clone(p.meta);
       if (p.albumPos) op.albumPos = clone(p.albumPos);
       if (p.linkPos)  op.linkPos  = clone(p.linkPos);
       if (p.crPos)    op.crPos    = clone(p.crPos);
