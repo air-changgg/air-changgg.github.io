@@ -32,6 +32,14 @@
   const CLOUDINARY_CLOUD  = 'ddi1otddv';
   const CLOUDINARY_PRESET = 'air chang';
 
+  // Editor UI (toolbar, drag/resize handles, all edit-mode controls) is only
+  // ever meant to be used locally while authoring content — never by a
+  // visitor on the deployed site. Gate the whole toolbar behind this so it
+  // never renders outside of local editing.
+  const EDITOR_ENABLED = location.hostname === 'localhost'
+    || location.hostname === '127.0.0.1'
+    || location.protocol === 'file:';
+
   let projectsBg = '#FFFFFF';
 
   /* ——— Layout constants ——— */
@@ -574,6 +582,7 @@
       <input type="color" id="edt-bg" value="#ffffff"> 背景
     </label>`;
   document.body.appendChild(toolbar);
+  if (!EDITOR_ENABLED) toolbar.style.display = 'none';
 
   const mapBtn         = document.getElementById('edt-map');
   const editBtn        = document.getElementById('edt-edit');
