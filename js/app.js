@@ -595,6 +595,15 @@ function cloudinaryUrl(url, w) {
   return url.replace('/upload/', `/upload/w_${w},f_auto/`);
 }
 
+/* Extracts the numeric video id from any Vimeo URL shape a user might
+   paste (vimeo.com/123, vimeo.com/video/123, player.vimeo.com/video/123,
+   with or without query params) and returns the embeddable player URL,
+   or null if the input isn't a recognizable Vimeo link. */
+function vimeoEmbedUrl(input) {
+  const m = String(input || '').match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  return m ? `https://player.vimeo.com/video/${m[1]}` : null;
+}
+
 /* Position + scale an <img> so the natural-image point (imgX%, imgY%) lands
    exactly at the container's center, magnified by zoom. This is what the crop
    modal's preview assumes ("window center = imgX/imgY"); object-position's
@@ -1994,13 +2003,26 @@ function renderDetail(slug) {
   const coverUrl = p.cover ? cloudinaryUrl(p.cover, 2400) : null;
   const gallery = p.gallery || [];
 
-  const galleryHtml = gallery.map(g => g.ratio ? `
+  const galleryHtml = gallery.map(g => {
+    if (g.type === 'video') {
+      const embed = vimeoEmbedUrl(g.vimeoUrl);
+      return `
+    <div class="gallery-item gallery-item-video" data-gallery-id="${g.id}">
+      <div class="gallery-video-frame">
+        ${embed
+          ? `<iframe src="${embed}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`
+          : `<div class="gallery-video-empty">尚未設定有效的 Vimeo 連結</div>`}
+      </div>
+    </div>`;
+    }
+    return g.ratio ? `
     <div class="gallery-item gallery-item-cropped" data-gallery-id="${g.id}" style="aspect-ratio:${g.ratio}">
       <img class="gi-crop-img" src="${cloudinaryUrl(g.url, 1800)}" draggable="false">
     </div>` : `
     <div class="gallery-item" data-gallery-id="${g.id}">
       <img src="${cloudinaryUrl(g.url, 1800)}" draggable="false">
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   const albumPhotos = p.albumPhotos || [];
   const albumSlidesHtml = albumPhotos.map((ph, i) => `

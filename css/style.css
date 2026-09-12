@@ -1766,6 +1766,34 @@ body:not(.editor-active) .info-proj-row[data-proj-link]:hover .itr-date {
   display: block;
 }
 
+/* Vimeo embed — fixed 16:9 via the classic padding-bottom trick, since an
+   <iframe> (unlike an <img>) has no natural intrinsic height to size off
+   of the way the rest of the gallery list does. */
+.gallery-video-frame {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+  background: var(--bg2);
+}
+
+.gallery-video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.gallery-video-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink3);
+  font-size: 0.85rem;
+}
+
 /* Once an item has been cropped (g.ratio set), it switches from natural
    height:auto to a fixed frame with the img positioned by JS
    (applyPreciseCrop, driven by g.imgX/Y/Zoom). */

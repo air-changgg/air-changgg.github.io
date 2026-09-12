@@ -573,6 +573,7 @@
     <input  type="file" id="edt-cover-file" accept="image/*" style="display:none">
     <button id="edt-gallery-add" title="新增詳述圖片" style="display:none">+ 圖片</button>
     <input  type="file" id="edt-gallery-file" accept="image/*" multiple style="display:none">
+    <button id="edt-gallery-video-add" title="新增 Vimeo 影片" style="display:none">+ 影片</button>
     <button id="edt-text-add" title="新增文字方塊" style="display:none">+ 文字</button>
     <button id="edt-line-add" title="新增細線"   style="display:none">+ 細線</button>
     <button id="edt-link-add" title="新增 Full Project 按鈕" style="display:none">+ Full Project</button>
@@ -593,6 +594,7 @@
   const coverFileInp   = document.getElementById('edt-cover-file');
   const galleryAddBtn  = document.getElementById('edt-gallery-add');
   const galleryFileInp = document.getElementById('edt-gallery-file');
+  const galleryVideoAddBtn = document.getElementById('edt-gallery-video-add');
   const textAddBtn     = document.getElementById('edt-text-add');
   const lineAddBtn     = document.getElementById('edt-line-add');
   const linkAddBtn     = document.getElementById('edt-link-add');
@@ -653,6 +655,18 @@
       galleryAddBtn.textContent = '+ 圖片';
       galleryFileInp.value = '';
     }
+  });
+
+  galleryVideoAddBtn.addEventListener('click', () => {
+    const p = getCurrentDetailProject();
+    if (!p) return;
+    const url = prompt('貼上 Vimeo 影片連結（例如 https://vimeo.com/123456789）：');
+    if (!url) return;
+    if (!vimeoEmbedUrl(url)) { alert('看起來不是有效的 Vimeo 連結，請確認格式。'); return; }
+    if (!p.gallery) p.gallery = [];
+    p.gallery.push({ id: Date.now() + Math.random(), type: 'video', vimeoUrl: url.trim() });
+    saveAll();
+    renderDetail(p.slug);
   });
 
   textAddBtn.addEventListener('click', () => {
@@ -749,6 +763,7 @@
     carouselBtn.style.display   = (isEditing && onHomePage)   ? '' : 'none';
     coverAddBtn.style.display   = (isEditing && onDetailPage) ? '' : 'none';
     galleryAddBtn.style.display = (isEditing && onDetailPage) ? '' : 'none';
+    galleryVideoAddBtn.style.display = (isEditing && onDetailPage) ? '' : 'none';
     textAddBtn.style.display    = (isEditing && onDetailPage) ? '' : 'none';
     lineAddBtn.style.display    = (isEditing && onDetailPage) ? '' : 'none';
     if (!(isEditing && onDetailPage)) linkAddBtn.style.display = 'none';
@@ -855,6 +870,7 @@
     carouselBtn.style.display   = (isEditing && onHome)   ? '' : 'none';
     coverAddBtn.style.display   = (isEditing && onDetail) ? '' : 'none';
     galleryAddBtn.style.display = (isEditing && onDetail) ? '' : 'none';
+    galleryVideoAddBtn.style.display = (isEditing && onDetail) ? '' : 'none';
     textAddBtn.style.display    = (isEditing && onDetail) ? '' : 'none';
     lineAddBtn.style.display    = (isEditing && onDetail) ? '' : 'none';
     if (!(isEditing && onDetail)) linkAddBtn.style.display = 'none';
@@ -3227,6 +3243,45 @@
       const g = p.gallery.find(x => String(x.id) === gid);
       if (!g) return;
 
+      // Vimeo items get a simplified panel — no crop or size-handle
+      // (the embed frame is a fixed 16:9, there's no image to crop),
+      // just reorder / replace-the-link / delete. Reordering reuses the
+      // exact same drag-handle wiring as image items below since it only
+      // ever touches the generic .gallery-item element, not the image
+      // internals — so this branch returns before reaching that code
+      // only to skip the image-specific crop/replace/size-handle setup.
+      if (g.type === 'video') {
+        const panel = document.createElement('div');
+        panel.className = 'gb-panel';
+        panel.innerHTML = `
+          <span class="gb-handle" title="拖曳排序">⋮⋮</span>
+          <button class="gb-replace" title="更換影片連結">⟳</button>
+          <button class="gb-del" title="刪除">✕</button>`;
+        el.appendChild(panel);
+        panel.addEventListener('mousedown', e => e.stopPropagation());
+        panel.addEventListener('click', e => e.stopPropagation());
+        panel.querySelector('.gb-replace').addEventListener('click', e => {
+          e.preventDefault(); e.stopPropagation();
+          const url = prompt('貼上新的 Vimeo 影片連結：', g.vimeoUrl || '');
+          if (!url) return;
+          if (!vimeoEmbedUrl(url)) { alert('看起來不是有效的 Vimeo 連結，請確認格式。'); return; }
+          g.vimeoUrl = url.trim();
+          saveAll();
+          renderDetail(p.slug);
+        });
+        panel.querySelector('.gb-del').addEventListener('click', e => {
+          e.preventDefault(); e.stopPropagation();
+          p.gallery.splice(p.gallery.indexOf(g), 1);
+          saveAll();
+          renderDetail(p.slug);
+        });
+        wireGalleryDragHandle(panel, el, canvas, p);
+        el.addEventListener('click', e => {
+          if (isEditing) { e.preventDefault(); e.stopPropagation(); }
+        });
+        return;
+      }
+
       const panel = document.createElement('div');
       panel.className = 'gb-panel';
       panel.innerHTML = `
@@ -3321,38 +3376,45 @@
         document.addEventListener('mouseup', onUp);
       });
 
-      panel.querySelector('.gb-handle').addEventListener('mousedown', e => {
-        e.preventDefault(); e.stopPropagation();
-        el.classList.add('block-dragging');
-        function onMove(ev) {
-          const items = [...canvas.querySelectorAll('.gallery-item')].filter(x => x !== el);
-          let placed = false;
-          for (const item of items) {
-            const rect = item.getBoundingClientRect();
-            if (ev.clientY < rect.top + rect.height / 2) {
-              if (item.previousElementSibling !== el) canvas.insertBefore(el, item);
-              placed = true;
-              break;
-            }
-          }
-          if (!placed) canvas.appendChild(el);
-        }
-        function onUp() {
-          el.classList.remove('block-dragging');
-          document.removeEventListener('mousemove', onMove);
-          document.removeEventListener('mouseup', onUp);
-          const newOrder = [...canvas.querySelectorAll('.gallery-item')]
-            .map(x => p.gallery.find(y => String(y.id) === x.dataset.galleryId));
-          p.gallery.splice(0, p.gallery.length, ...newOrder);
-          saveAll();
-        }
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
-      });
+      wireGalleryDragHandle(panel, el, canvas, p);
 
       el.addEventListener('click', e => {
         if (isEditing) { e.preventDefault(); e.stopPropagation(); }
       });
+    });
+  }
+
+  // Drag-to-reorder for a .gallery-item, shared by both image and Vimeo
+  // video items — only ever touches the generic element/array position,
+  // never anything image-specific, so the same wiring works for either.
+  function wireGalleryDragHandle(panel, el, canvas, p) {
+    panel.querySelector('.gb-handle').addEventListener('mousedown', e => {
+      e.preventDefault(); e.stopPropagation();
+      el.classList.add('block-dragging');
+      function onMove(ev) {
+        const items = [...canvas.querySelectorAll('.gallery-item')].filter(x => x !== el);
+        let placed = false;
+        for (const item of items) {
+          const rect = item.getBoundingClientRect();
+          if (ev.clientY < rect.top + rect.height / 2) {
+            if (item.previousElementSibling !== el) canvas.insertBefore(el, item);
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) canvas.appendChild(el);
+      }
+      function onUp() {
+        el.classList.remove('block-dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        const newOrder = [...canvas.querySelectorAll('.gallery-item')]
+          .map(x => p.gallery.find(y => String(y.id) === x.dataset.galleryId));
+        p.gallery.splice(0, p.gallery.length, ...newOrder);
+        saveAll();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
     });
   }
 
