@@ -2067,7 +2067,7 @@ function renderDetail(slug) {
       return `<div class="custom-line" data-custom-id="${b.id}" data-custom-type="line"></div>`;
     }
     return `<div class="custom-text" data-custom-id="${b.id}" data-custom-type="text">
-      <p style="font-size:${b.fontSize || 13}px;color:${p.detailDark ? 'var(--ink2)' : (b.color || 'var(--ink2)')};font-weight:${b.weight || 400}">${b.text || '雙擊以編輯文字'}</p>
+      <p style="font-size:${b.fontSize || 13}px;color:${b.color || 'var(--ink2)'};font-weight:${b.weight || 400}">${b.text || '雙擊以編輯文字'}</p>
     </div>`;
   }).join('');
 
@@ -2080,29 +2080,19 @@ function renderDetail(slug) {
       <div class="detail-header">
         <span class="detail-number">${number}</span>
         <h1 class="detail-title">${p.name}</h1>
-        <p class="detail-subtitle" data-text-block="subtitle" style="font-size:${p.subFontSize || 13}px;font-weight:${p.subWeight || 400};color:${p.detailDark ? 'var(--ink3)' : (p.subColor || 'var(--ink3)')}">${p.subtitle}</p>
+        <p class="detail-subtitle" data-text-block="subtitle" style="font-size:${p.subFontSize || 13}px;font-weight:${p.subWeight || 400};color:${p.subColor || 'var(--ink3)'}">${p.subtitle}</p>
       </div>
 
       <div class="detail-meta-row" data-project-slug="${p.slug}">
         ${p.stHidden ? '' : `
         <div class="detail-statement" data-text-block="statement" style="${(p.stWidth > 0 && p.stWidth <= 1) ? `width:${(p.stWidth * 100).toFixed(2)}%;` : ''}">
-          <p style="font-size:${p.stFontSize || 12}px;color:${p.detailDark ? 'var(--ink2)' : (p.stColor || 'var(--ink2)')};font-weight:${p.stWeight || 400}">${p.desc}</p>
+          <p style="font-size:${p.stFontSize || 12}px;color:${p.stColor || 'var(--ink2)'};font-weight:${p.stWeight || 400}">${p.desc}</p>
         </div>`}
       </div>
 
       <div class="credit-canvas" id="credit-canvas" data-project-slug="${p.slug}">
         <div class="detail-credit" data-text-block="credit" style="font-size:${p.crFontSize || 11}px${creditRowHeight ? `;--row-h:${creditRowHeight}px` : ''};--meta-label-w:${creditLabelWidth}px">
-          ${p.meta.map((m, i) => {
-            // A custom crColor is a deliberate light-theme choice — dark
-            // mode ignores it and falls back to .meta-label/.meta-value's
-            // own CSS color:var(--ink3/--ink), which the .dark token
-            // override above already flips correctly. Without this, a
-            // project that had a custom (likely dark, e.g. #444) credit
-            // color set before switching to dark mode would render that
-            // text almost invisibly on the new near-black background.
-            const crColor = p.detailDark ? null : p.crColor;
-            const crStyle = (crColor || p.crWeight) ? ` style="${crColor ? `color:${crColor};` : ''}${p.crWeight ? `font-weight:${p.crWeight};` : ''}"` : '';
-            return `
+          ${p.meta.map((m, i) => { const crStyle = (p.crColor || p.crWeight) ? ` style="${p.crColor ? `color:${p.crColor};` : ''}${p.crWeight ? `font-weight:${p.crWeight};` : ''}"` : ''; return `
           <div class="meta-row" data-meta-idx="${i}">
             <span class="meta-label"${crStyle}>${m.label}</span>
             <span class="meta-value"${crStyle}>${m.value}</span>
@@ -2129,7 +2119,7 @@ function renderDetail(slug) {
           ${p.linkHidden ? '' : `
           <a href="${p.linkUrl || '#'}" class="full-project-link" data-outro-block="link"
              ${p.linkUrl ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;"'}>
-            <span class="fpl-text" style="font-size:${p.linkFontSize || 13}px;color:${p.detailDark ? 'var(--ink)' : (p.linkColor || 'var(--ink)')};font-weight:${p.linkWeight || 600}">${p.linkText || 'Full Project'}</span>
+            <span class="fpl-text" style="font-size:${p.linkFontSize || 13}px;color:${p.linkColor || 'var(--ink)'};font-weight:${p.linkWeight || 600}">${p.linkText || 'Full Project'}</span>
             <span class="fpl-arrow">⟶</span>
           </a>`}
         </div>
