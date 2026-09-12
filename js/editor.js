@@ -660,11 +660,12 @@
   galleryVideoAddBtn.addEventListener('click', () => {
     const p = getCurrentDetailProject();
     if (!p) return;
-    const url = prompt('貼上 Vimeo 影片連結（例如 https://vimeo.com/123456789）：');
+    const url = prompt('貼上 Vimeo 影片連結，或從 Vimeo「嵌入」面板複製的整段 <iframe> 程式碼都可以：');
     if (!url) return;
-    if (!vimeoEmbedUrl(url)) { alert('看起來不是有效的 Vimeo 連結，請確認格式。'); return; }
+    const embed = vimeoEmbedUrl(url);
+    if (!embed) { alert('看起來不是有效的 Vimeo 連結或嵌入碼，請確認格式。'); return; }
     if (!p.gallery) p.gallery = [];
-    p.gallery.push({ id: Date.now() + Math.random(), type: 'video', vimeoUrl: url.trim() });
+    p.gallery.push({ id: Date.now() + Math.random(), type: 'video', vimeoUrl: embed });
     saveAll();
     renderDetail(p.slug);
   });
@@ -3262,10 +3263,11 @@
         panel.addEventListener('click', e => e.stopPropagation());
         panel.querySelector('.gb-replace').addEventListener('click', e => {
           e.preventDefault(); e.stopPropagation();
-          const url = prompt('貼上新的 Vimeo 影片連結：', g.vimeoUrl || '');
+          const url = prompt('貼上新的 Vimeo 影片連結或 <iframe> 嵌入碼：', g.vimeoUrl || '');
           if (!url) return;
-          if (!vimeoEmbedUrl(url)) { alert('看起來不是有效的 Vimeo 連結，請確認格式。'); return; }
-          g.vimeoUrl = url.trim();
+          const embed = vimeoEmbedUrl(url);
+          if (!embed) { alert('看起來不是有效的 Vimeo 連結或嵌入碼，請確認格式。'); return; }
+          g.vimeoUrl = embed;
           saveAll();
           renderDetail(p.slug);
         });

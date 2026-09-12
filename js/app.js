@@ -595,13 +595,30 @@ function cloudinaryUrl(url, w) {
   return url.replace('/upload/', `/upload/w_${w},f_auto/`);
 }
 
-/* Extracts the numeric video id from any Vimeo URL shape a user might
-   paste (vimeo.com/123, vimeo.com/video/123, player.vimeo.com/video/123,
-   with or without query params) and returns the embeddable player URL,
-   or null if the input isn't a recognizable Vimeo link. */
+/* Extracts a usable Vimeo embed URL from whatever a user might paste:
+   - the full <iframe ...> embed code Vimeo's "Embed" panel gives you —
+     used as-is (its src already carries the ?h=<hash> private-video
+     token, which a bare share link doesn't have and unlisted videos
+     won't play without)
+   - a player.vimeo.com/video/<id>[?h=<hash>] URL directly
+   - a plain share link, vimeo.com/<id> or vimeo.com/<id>/<hash> (Vimeo's
+     own format for unlisted videos, hash as a path segment rather than
+     a query param) — converted to the equivalent player URL
+   Returns null if nothing recognizable is found. */
 function vimeoEmbedUrl(input) {
-  const m = String(input || '').match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  return m ? `https://player.vimeo.com/video/${m[1]}` : null;
+  const str = String(input || '');
+  const iframeMatch = str.match(/<iframe[^>]*\ssrc=["']([^"']+)["']/i);
+  if (iframeMatch && /player\.vimeo\.com\/video\/\d+/.test(iframeMatch[1])) {
+    return iframeMatch[1];
+  }
+  const playerMatch = str.match(/https?:\/\/player\.vimeo\.com\/video\/\d+(?:\?[^"'\s<>]*)?/i);
+  if (playerMatch) return playerMatch[0];
+  const shareMatch = str.match(/vimeo\.com\/(?:video\/)?(\d+)(?:\/([a-zA-Z0-9]+))?/);
+  if (shareMatch) {
+    const [, id, hash] = shareMatch;
+    return `https://player.vimeo.com/video/${id}${hash ? `?h=${hash}` : ''}`;
+  }
+  return null;
 }
 
 /* Position + scale an <img> so the natural-image point (imgX%, imgY%) lands
