@@ -717,6 +717,7 @@ function initHeroV1() {
    which patch their section without rebuilding the hero or losing scroll
    position — see those functions for why. */
 function renderHome() {
+  document.body.classList.remove('nav-dark'); // leaving any dark detail page behind
   curtainProgress = 0; // fresh mount — replay the intro from scratch
   totalCounterShown = false; // fresh mount — replay the counter too
   projListExpanded = false; // fresh mount — collapse the project list again
@@ -2011,6 +2012,12 @@ function renderInfo() {
 function renderDetail(slug) {
   const p = projects.find(x => x.slug === slug);
   if (!p) { renderNotFound(); return; }
+  // The sticky top nav sits outside .detail-page entirely (a fixed
+  // element in #nav, not a descendant), so it can't pick up the
+  // .detail-page.dark scoped color tokens on its own — mirror the
+  // project's theme onto <body> too so the translucent nav bar itself
+  // switches to a dark treatment instead of clashing with a black page.
+  document.body.classList.toggle('nav-dark', !!p.detailDark);
 
   const idx  = projects.indexOf(p);
   const prev = projects[(idx - 1 + projects.length) % projects.length];
@@ -2060,12 +2067,12 @@ function renderDetail(slug) {
       return `<div class="custom-line" data-custom-id="${b.id}" data-custom-type="line"></div>`;
     }
     return `<div class="custom-text" data-custom-id="${b.id}" data-custom-type="text">
-      <p style="font-size:${b.fontSize || 13}px;color:${b.color || '#6B6B65'};font-weight:${b.weight || 400}">${b.text || '雙擊以編輯文字'}</p>
+      <p style="font-size:${b.fontSize || 13}px;color:${p.detailDark ? 'var(--ink2)' : (b.color || 'var(--ink2)')};font-weight:${b.weight || 400}">${b.text || '雙擊以編輯文字'}</p>
     </div>`;
   }).join('');
 
   setPage(`
-<div class="page detail-page">
+<div class="page detail-page${p.detailDark ? ' dark' : ''}">
   ${coverUrl ? `<div class="detail-cover-img"><div class="dc-frame"><img class="dc-img" src="${coverUrl}" alt="${p.name}" draggable="false"></div></div>` : ''}
 
   <div class="detail-split">
@@ -2073,19 +2080,29 @@ function renderDetail(slug) {
       <div class="detail-header">
         <span class="detail-number">${number}</span>
         <h1 class="detail-title">${p.name}</h1>
-        <p class="detail-subtitle" data-text-block="subtitle" style="font-size:${p.subFontSize || 13}px;font-weight:${p.subWeight || 400};color:${p.subColor || '#9B9B93'}">${p.subtitle}</p>
+        <p class="detail-subtitle" data-text-block="subtitle" style="font-size:${p.subFontSize || 13}px;font-weight:${p.subWeight || 400};color:${p.detailDark ? 'var(--ink3)' : (p.subColor || 'var(--ink3)')}">${p.subtitle}</p>
       </div>
 
       <div class="detail-meta-row" data-project-slug="${p.slug}">
         ${p.stHidden ? '' : `
         <div class="detail-statement" data-text-block="statement" style="${(p.stWidth > 0 && p.stWidth <= 1) ? `width:${(p.stWidth * 100).toFixed(2)}%;` : ''}">
-          <p style="font-size:${p.stFontSize || 12}px;color:${p.stColor || '#6B6B65'};font-weight:${p.stWeight || 400}">${p.desc}</p>
+          <p style="font-size:${p.stFontSize || 12}px;color:${p.detailDark ? 'var(--ink2)' : (p.stColor || 'var(--ink2)')};font-weight:${p.stWeight || 400}">${p.desc}</p>
         </div>`}
       </div>
 
       <div class="credit-canvas" id="credit-canvas" data-project-slug="${p.slug}">
         <div class="detail-credit" data-text-block="credit" style="font-size:${p.crFontSize || 11}px${creditRowHeight ? `;--row-h:${creditRowHeight}px` : ''};--meta-label-w:${creditLabelWidth}px">
-          ${p.meta.map((m, i) => { const crStyle = (p.crColor || p.crWeight) ? ` style="${p.crColor ? `color:${p.crColor};` : ''}${p.crWeight ? `font-weight:${p.crWeight};` : ''}"` : ''; return `
+          ${p.meta.map((m, i) => {
+            // A custom crColor is a deliberate light-theme choice — dark
+            // mode ignores it and falls back to .meta-label/.meta-value's
+            // own CSS color:var(--ink3/--ink), which the .dark token
+            // override above already flips correctly. Without this, a
+            // project that had a custom (likely dark, e.g. #444) credit
+            // color set before switching to dark mode would render that
+            // text almost invisibly on the new near-black background.
+            const crColor = p.detailDark ? null : p.crColor;
+            const crStyle = (crColor || p.crWeight) ? ` style="${crColor ? `color:${crColor};` : ''}${p.crWeight ? `font-weight:${p.crWeight};` : ''}"` : '';
+            return `
           <div class="meta-row" data-meta-idx="${i}">
             <span class="meta-label"${crStyle}>${m.label}</span>
             <span class="meta-value"${crStyle}>${m.value}</span>
@@ -2112,7 +2129,7 @@ function renderDetail(slug) {
           ${p.linkHidden ? '' : `
           <a href="${p.linkUrl || '#'}" class="full-project-link" data-outro-block="link"
              ${p.linkUrl ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;"'}>
-            <span class="fpl-text" style="font-size:${p.linkFontSize || 13}px;color:${p.linkColor || '#1A1A18'};font-weight:${p.linkWeight || 600}">${p.linkText || 'Full Project'}</span>
+            <span class="fpl-text" style="font-size:${p.linkFontSize || 13}px;color:${p.detailDark ? 'var(--ink)' : (p.linkColor || 'var(--ink)')};font-weight:${p.linkWeight || 600}">${p.linkText || 'Full Project'}</span>
             <span class="fpl-arrow">⟶</span>
           </a>`}
         </div>
@@ -2206,6 +2223,7 @@ function initGalleryRevealObserver() {
    404
    ============================================= */
 function renderNotFound() {
+  document.body.classList.remove('nav-dark');
   setPage(`
 <div class="page not-found">
   <span class="not-found-num">404</span>

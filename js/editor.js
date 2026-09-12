@@ -571,6 +571,7 @@
     <button id="edt-home-var" title="切換首頁版型" style="display:none">首頁 V1</button>
     <button id="edt-cover-add" title="上傳/替換主圖" style="display:none">+ 主圖</button>
     <input  type="file" id="edt-cover-file" accept="image/*" style="display:none">
+    <button id="edt-detail-theme" title="切換此專案頁的深色/淺色背景" style="display:none">淺色</button>
     <button id="edt-gallery-add" title="新增詳述圖片" style="display:none">+ 圖片</button>
     <input  type="file" id="edt-gallery-file" accept="image/*" multiple style="display:none">
     <button id="edt-gallery-video-add" title="新增 Vimeo 影片" style="display:none">+ 影片</button>
@@ -592,6 +593,7 @@
   const homeVarBtn     = document.getElementById('edt-home-var');
   const coverAddBtn    = document.getElementById('edt-cover-add');
   const coverFileInp   = document.getElementById('edt-cover-file');
+  const detailThemeBtn = document.getElementById('edt-detail-theme');
   const galleryAddBtn  = document.getElementById('edt-gallery-add');
   const galleryFileInp = document.getElementById('edt-gallery-file');
   const galleryVideoAddBtn = document.getElementById('edt-gallery-video-add');
@@ -612,6 +614,15 @@
 
   mapBtn.addEventListener('click', toggleSiteMap);
   carouselBtn.addEventListener('click', openCarouselEditor);
+
+  detailThemeBtn.addEventListener('click', () => {
+    const p = getCurrentDetailProject();
+    if (!p) return;
+    p.detailDark = !p.detailDark;
+    detailThemeBtn.textContent = p.detailDark ? '深色' : '淺色';
+    saveAll();
+    renderDetail(p.slug);
+  });
 
   coverAddBtn.addEventListener('click', () => coverFileInp.click());
   coverFileInp.addEventListener('change', async () => {
@@ -763,6 +774,8 @@
     addBtn.style.display        = (isEditing && onHomePage)   ? '' : 'none';
     carouselBtn.style.display   = (isEditing && onHomePage)   ? '' : 'none';
     coverAddBtn.style.display   = (isEditing && onDetailPage) ? '' : 'none';
+    detailThemeBtn.style.display = (isEditing && onDetailPage) ? '' : 'none';
+    if (onDetailPage) detailThemeBtn.textContent = getCurrentDetailProject()?.detailDark ? '深色' : '淺色';
     galleryAddBtn.style.display = (isEditing && onDetailPage) ? '' : 'none';
     galleryVideoAddBtn.style.display = (isEditing && onDetailPage) ? '' : 'none';
     textAddBtn.style.display    = (isEditing && onDetailPage) ? '' : 'none';
@@ -870,6 +883,8 @@
     addBtn.style.display        = (isEditing && onHome)   ? '' : 'none';
     carouselBtn.style.display   = (isEditing && onHome)   ? '' : 'none';
     coverAddBtn.style.display   = (isEditing && onDetail) ? '' : 'none';
+    detailThemeBtn.style.display = (isEditing && onDetail) ? '' : 'none';
+    if (onDetail) detailThemeBtn.textContent = getCurrentDetailProject()?.detailDark ? '深色' : '淺色';
     galleryAddBtn.style.display = (isEditing && onDetail) ? '' : 'none';
     galleryVideoAddBtn.style.display = (isEditing && onDetail) ? '' : 'none';
     textAddBtn.style.display    = (isEditing && onDetail) ? '' : 'none';

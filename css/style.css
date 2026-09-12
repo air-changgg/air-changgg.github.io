@@ -92,6 +92,18 @@ img { display: block; max-width: 100%; }
 .nav-links a:hover,
 .nav-links a.active { color: var(--accent); }
 
+/* The sticky nav is a fixed element outside .detail-page, so it can't
+   pick up that page's scoped dark-theme tokens on its own — toggled
+   directly on <body> (see renderDetail() in app.js) whenever the
+   current project's detailDark is on, so the frosted nav bar itself
+   goes dark instead of sitting as a stark light strip over a black
+   page. Scoped to these specific properties rather than redefining the
+   shared --ink/--bg tokens at body level, since a brief page-transition
+   overlap (old page fading out while the new one fades in) would
+   otherwise leak the dark palette into whichever page isn't dark. */
+body.nav-dark #nav { background: rgba(14,14,12,0.55); }
+body.nav-dark .nav-links a { color: #B0AFA8; }
+
 /* =============================================
    Page Transitions
    ============================================= */
@@ -1342,6 +1354,29 @@ body:not(.editor-active) .info-proj-row[data-proj-link]:hover .itr-date {
    ============================================= */
 .detail-page {
   padding-top: 0;
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+/* Per-project dark theme (toggled via the editor's 淺色/深色 button,
+   stored as p.detailDark). Redefining the shared color tokens locally
+   here — rather than a long list of one-off selector overrides — means
+   every descendant that already reads var(--bg)/var(--ink)/etc (which
+   is nearly everything, by design) flips automatically; only a few
+   inline text-color fallbacks that used to hardcode a literal hex
+   needed changing to var(--ink2) etc. so they'd participate in this
+   cascade too (see renderDetail() in app.js). An explicit per-project
+   color pick (p.stColor etc.) still overrides the theme either way,
+   same as it already overrides the light theme's tokens — this toggle
+   only changes what an *unset* color falls back to. */
+.detail-page.dark {
+  --bg:      #0E0E0C;
+  --bg2:     #1B1B18;
+  --bg3:     #262622;
+  --ink:     #F5F4F0;
+  --ink2:    #B0AFA8;
+  --ink3:    #7A7A72;
+  --border:  #333330;
 }
 
 /* ——— Split layout: fixed-in-place left column (title/description/meta/
