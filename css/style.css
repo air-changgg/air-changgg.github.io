@@ -1917,19 +1917,24 @@ body:not(.editor-active) .info-proj-row[data-proj-link]:hover .itr-date {
 .gb-del:hover { background: #fff; }
 
 .gb-replace,
-.gb-crop {
+.gb-crop,
+.gb-autoplay,
+.gb-poster {
   flex-shrink: 0;
   padding: 0.3rem 0.55rem;
   background: rgba(255,255,255,0.92);
   border: none;
   font-size: 13px;
+  white-space: nowrap;
   cursor: pointer;
   color: var(--ink);
   transition: background 150ms, color 150ms;
 }
 
 .gb-replace:hover,
-.gb-crop:hover { background: #fff; color: var(--accent); }
+.gb-crop:hover,
+.gb-autoplay:hover,
+.gb-poster:hover { background: #fff; color: var(--accent); }
 
 /* Cover image edit panel — same look as .gb-panel, positioned relative
    to .dc-frame (not .detail-cover-img, which also carries padding) */

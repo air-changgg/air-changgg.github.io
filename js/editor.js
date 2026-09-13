@@ -3356,14 +3356,48 @@
       if (g.type === 'video-file') {
         const panel = document.createElement('div');
         panel.className = 'gb-panel';
+        // g.autoplay is opt-out (undefined/true = on), matching the
+        // stHidden/linkHidden convention elsewhere — an already-uploaded
+        // video that predates this control keeps autoplaying rather
+        // than silently changing behavior underneath the user.
+        const autoplayOn = g.autoplay !== false;
         panel.innerHTML = `
           <span class="gb-handle" title="拖曳排序">⋮⋮</span>
+          <button class="gb-autoplay" title="切換自動播放">${autoplayOn ? '自動：開' : '自動：關'}</button>
+          <button class="gb-poster" title="設定播放前的封面圖">封面圖</button>
+          <input type="file" class="gb-poster-file" accept="image/*" style="display:none">
           <button class="gb-replace" title="更換影片檔">⟳</button>
           <input type="file" class="gb-replace-file" accept="video/*" style="display:none">
           <button class="gb-del" title="刪除">✕</button>`;
         el.appendChild(panel);
         panel.addEventListener('mousedown', e => e.stopPropagation());
         panel.addEventListener('click', e => e.stopPropagation());
+        const autoplayBtn = panel.querySelector('.gb-autoplay');
+        autoplayBtn.addEventListener('click', e => {
+          e.preventDefault(); e.stopPropagation();
+          g.autoplay = !(g.autoplay !== false);
+          autoplayBtn.textContent = g.autoplay ? '自動：開' : '自動：關';
+          saveAll();
+          renderDetail(p.slug);
+        });
+        const posterBtn = panel.querySelector('.gb-poster');
+        const posterInput = panel.querySelector('.gb-poster-file');
+        posterBtn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); posterInput.click(); });
+        posterInput.addEventListener('change', async () => {
+          const file = posterInput.files?.[0];
+          if (!file) return;
+          posterBtn.textContent = '…';
+          try {
+            g.poster = await uploadToCloudinary(file);
+            saveAll();
+            renderDetail(p.slug);
+          } catch (err) {
+            alert('封面圖上傳失敗：' + err.message);
+          } finally {
+            posterBtn.textContent = '封面圖';
+            posterInput.value = '';
+          }
+        });
         const replaceBtn = panel.querySelector('.gb-replace');
         const replaceInput = panel.querySelector('.gb-replace-file');
         replaceBtn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); replaceInput.click(); });

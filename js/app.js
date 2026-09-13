@@ -2058,11 +2058,16 @@ function renderDetail(slug) {
     </div>`;
     }
     if (g.type === 'video-file') {
+      // Opt-out autoplay (see the gb-autoplay toggle in editor.js): "on"
+      // means the GIF-like muted/looping treatment; "off" is a plain
+      // click-to-play video with real sound, playing once.
+      const autoplayOn = g.autoplay !== false;
+      const posterUrl = g.poster ? cloudinaryUrl(g.poster, 1800) : null;
       return `
     <div class="gallery-item gallery-item-video" data-gallery-id="${g.id}">
       <div class="gallery-video-frame" style="aspect-ratio:${g.ratio || 16/9}">
         ${g.url
-          ? `<video src="${g.url}" controls autoplay muted loop playsinline preload="auto"></video>`
+          ? `<video src="${g.url}" controls playsinline preload="${autoplayOn ? 'auto' : 'metadata'}"${autoplayOn ? ' autoplay muted loop' : ''}${posterUrl ? ` poster="${posterUrl}"` : ''}></video>`
           : `<div class="gallery-video-empty">尚未上傳影片</div>`}
       </div>
     </div>`;
@@ -2186,10 +2191,13 @@ function renderDetail(slug) {
     // inserted via innerHTML (as every render here is) rather than
     // present at initial document parse — some engines only actually
     // start playback if it's kicked off from script, even though the
-    // attribute and muted state are both set correctly. Muted, so this
-    // never runs into the browser's no-sound-autoplay block; .catch is
-    // just a safety net for the rare browser that blocks it anyway.
-    document.querySelectorAll('.gallery-video-frame video').forEach(v => v.play().catch(() => {}));
+    // attribute and muted state are both set correctly. Only the videos
+    // that actually have autoplay on (see the render branch above) get
+    // the attribute at all, so this selector alone already respects the
+    // per-video gb-autoplay toggle. Muted, so this never runs into the
+    // browser's no-sound-autoplay block; .catch is just a safety net
+    // for the rare browser that blocks it anyway.
+    document.querySelectorAll('.gallery-video-frame video[autoplay]').forEach(v => v.play().catch(() => {}));
   });
 }
 
