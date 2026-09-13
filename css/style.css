@@ -1818,12 +1818,14 @@ body:not(.editor-active) .info-proj-row[data-proj-link]:hover .itr-date {
   background: var(--bg2);
 }
 
-.gallery-video-frame iframe {
+.gallery-video-frame iframe,
+.gallery-video-frame video {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   border: 0;
+  display: block;
 }
 
 .gallery-video-empty {

@@ -2057,6 +2057,16 @@ function renderDetail(slug) {
       </div>
     </div>`;
     }
+    if (g.type === 'video-file') {
+      return `
+    <div class="gallery-item gallery-item-video" data-gallery-id="${g.id}">
+      <div class="gallery-video-frame" style="aspect-ratio:${g.ratio || 16/9}">
+        ${g.url
+          ? `<video src="${g.url}" controls playsinline preload="metadata"></video>`
+          : `<div class="gallery-video-empty">尚未上傳影片</div>`}
+      </div>
+    </div>`;
+    }
     return g.ratio ? `
     <div class="gallery-item gallery-item-cropped" data-gallery-id="${g.id}" style="aspect-ratio:${g.ratio}">
       <img class="gi-crop-img" src="${cloudinaryUrl(g.url, 1800)}" draggable="false">

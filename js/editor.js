@@ -574,7 +574,9 @@
     <button id="edt-detail-theme" title="切換此專案頁的深色/淺色背景" style="display:none">淺色</button>
     <button id="edt-gallery-add" title="新增詳述圖片" style="display:none">+ 圖片</button>
     <input  type="file" id="edt-gallery-file" accept="image/*" multiple style="display:none">
-    <button id="edt-gallery-video-add" title="新增 Vimeo 影片" style="display:none">+ 影片</button>
+    <button id="edt-gallery-video-add" title="新增 Vimeo 影片" style="display:none">+ Vimeo 影片</button>
+    <button id="edt-gallery-videofile-add" title="直接上傳影片檔（無第三方 Logo）" style="display:none">+ 上傳影片</button>
+    <input  type="file" id="edt-gallery-videofile-file" accept="video/*" style="display:none">
     <button id="edt-text-add" title="新增文字方塊" style="display:none">+ 文字</button>
     <button id="edt-line-add" title="新增細線"   style="display:none">+ 細線</button>
     <button id="edt-link-add" title="新增 Full Project 按鈕" style="display:none">+ Full Project</button>
@@ -597,6 +599,8 @@
   const galleryAddBtn  = document.getElementById('edt-gallery-add');
   const galleryFileInp = document.getElementById('edt-gallery-file');
   const galleryVideoAddBtn = document.getElementById('edt-gallery-video-add');
+  const galleryVideoFileAddBtn = document.getElementById('edt-gallery-videofile-add');
+  const galleryVideoFileInp = document.getElementById('edt-gallery-videofile-file');
   const textAddBtn     = document.getElementById('edt-text-add');
   const lineAddBtn     = document.getElementById('edt-line-add');
   const linkAddBtn     = document.getElementById('edt-link-add');
@@ -683,6 +687,27 @@
     p.gallery.push({ id: Date.now() + Math.random(), type: 'video', vimeoUrl: embed, ratio: ratio || undefined });
     saveAll();
     renderDetail(p.slug);
+  });
+
+  galleryVideoFileAddBtn.addEventListener('click', () => galleryVideoFileInp.click());
+  galleryVideoFileInp.addEventListener('change', async () => {
+    const p = getCurrentDetailProject();
+    const file = galleryVideoFileInp.files?.[0];
+    if (!p || !file) return;
+    if (!p.gallery) p.gallery = [];
+
+    galleryVideoFileAddBtn.textContent = '上傳中…';
+    try {
+      const { url, ratio } = await uploadVideoToCloudinary(file);
+      p.gallery.push({ id: Date.now() + Math.random(), type: 'video-file', url, ratio });
+      saveAll();
+      renderDetail(p.slug);
+    } catch (err) {
+      alert('影片上傳失敗：' + err.message);
+    } finally {
+      galleryVideoFileAddBtn.textContent = '+ 上傳影片';
+      galleryVideoFileInp.value = '';
+    }
   });
 
   textAddBtn.addEventListener('click', () => {
@@ -782,6 +807,7 @@
     if (onDetailPage) detailThemeBtn.textContent = getCurrentDetailProject()?.detailDark ? '深色' : '淺色';
     galleryAddBtn.style.display = (isEditing && onDetailPage) ? '' : 'none';
     galleryVideoAddBtn.style.display = (isEditing && onDetailPage) ? '' : 'none';
+    galleryVideoFileAddBtn.style.display = (isEditing && onDetailPage) ? '' : 'none';
     textAddBtn.style.display    = (isEditing && onDetailPage) ? '' : 'none';
     lineAddBtn.style.display    = (isEditing && onDetailPage) ? '' : 'none';
     if (!(isEditing && onDetailPage)) linkAddBtn.style.display = 'none';
@@ -891,6 +917,7 @@
     if (onDetail) detailThemeBtn.textContent = getCurrentDetailProject()?.detailDark ? '深色' : '淺色';
     galleryAddBtn.style.display = (isEditing && onDetail) ? '' : 'none';
     galleryVideoAddBtn.style.display = (isEditing && onDetail) ? '' : 'none';
+    galleryVideoFileAddBtn.style.display = (isEditing && onDetail) ? '' : 'none';
     textAddBtn.style.display    = (isEditing && onDetail) ? '' : 'none';
     lineAddBtn.style.display    = (isEditing && onDetail) ? '' : 'none';
     if (!(isEditing && onDetail)) linkAddBtn.style.display = 'none';
@@ -952,6 +979,24 @@
     );
     if (!res.ok) throw new Error(await res.text());
     return (await res.json()).secure_url;
+  }
+
+  /* Self-hosted video upload — same unsigned preset, but Cloudinary's
+     /video/upload endpoint (resource_type=video) instead of /image/upload.
+     Its response already includes the real width/height (unlike Vimeo,
+     which needs a separate oEmbed call for that), so the gallery frame
+     can be sized correctly from this one request. */
+  async function uploadVideoToCloudinary(file) {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('upload_preset', CLOUDINARY_PRESET);
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`,
+      { method: 'POST', body: form }
+    );
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    return { url: data.secure_url, ratio: (data.width > 0 && data.height > 0) ? data.width / data.height : undefined };
   }
 
   function coverBg(p, w = 800) {
@@ -3290,6 +3335,52 @@
           g.ratio = (await fetchVimeoRatio(embed)) || undefined;
           saveAll();
           renderDetail(p.slug);
+        });
+        panel.querySelector('.gb-del').addEventListener('click', e => {
+          e.preventDefault(); e.stopPropagation();
+          p.gallery.splice(p.gallery.indexOf(g), 1);
+          saveAll();
+          renderDetail(p.slug);
+        });
+        wireGalleryDragHandle(panel, el, canvas, p);
+        el.addEventListener('click', e => {
+          if (isEditing) { e.preventDefault(); e.stopPropagation(); }
+        });
+        return;
+      }
+
+      // Self-hosted video file — same simplified panel as the Vimeo
+      // branch above (no crop, since the whole point is showing the
+      // file at its own real aspect ratio), just replace swaps in a new
+      // upload instead of a pasted link.
+      if (g.type === 'video-file') {
+        const panel = document.createElement('div');
+        panel.className = 'gb-panel';
+        panel.innerHTML = `
+          <span class="gb-handle" title="拖曳排序">⋮⋮</span>
+          <button class="gb-replace" title="更換影片檔">⟳</button>
+          <input type="file" class="gb-replace-file" accept="video/*" style="display:none">
+          <button class="gb-del" title="刪除">✕</button>`;
+        el.appendChild(panel);
+        panel.addEventListener('mousedown', e => e.stopPropagation());
+        panel.addEventListener('click', e => e.stopPropagation());
+        const replaceBtn = panel.querySelector('.gb-replace');
+        const replaceInput = panel.querySelector('.gb-replace-file');
+        replaceBtn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); replaceInput.click(); });
+        replaceInput.addEventListener('change', async () => {
+          const file = replaceInput.files?.[0];
+          if (!file) return;
+          replaceBtn.textContent = '…';
+          try {
+            const { url, ratio } = await uploadVideoToCloudinary(file);
+            g.url = url;
+            g.ratio = ratio;
+            saveAll();
+            renderDetail(p.slug);
+          } catch (err) {
+            alert('影片上傳失敗：' + err.message);
+            replaceBtn.textContent = '⟳';
+          }
         });
         panel.querySelector('.gb-del').addEventListener('click', e => {
           e.preventDefault(); e.stopPropagation();
