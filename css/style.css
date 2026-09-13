@@ -1551,6 +1551,19 @@ body:not(.editor-active) .info-proj-row[data-proj-link]:hover .itr-date {
   max-height: none;
 }
 
+/* A video cover has no pan/zoom crop (see injectCoverImagePanel in
+   editor.js) — just fill the frame plainly, same treatment as a
+   gallery video's frame. */
+.dc-frame video.dc-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0;
+  display: block;
+}
+
 .editor-active .dc-frame {
   /* overflow stays hidden here (unlike other free-form blocks) — the
      crop image can be explicitly oversized via pan/zoom, so letting

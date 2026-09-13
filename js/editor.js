@@ -570,7 +570,7 @@
     <button id="edt-carousel" title="輪播管理"  style="display:none">≡ 輪播</button>
     <button id="edt-home-var" title="切換首頁版型" style="display:none">首頁 V1</button>
     <button id="edt-cover-add" title="上傳/替換主圖" style="display:none">+ 主圖</button>
-    <input  type="file" id="edt-cover-file" accept="image/*" style="display:none">
+    <input  type="file" id="edt-cover-file" accept="image/*,video/*" style="display:none">
     <button id="edt-detail-theme" title="切換此專案頁的深色/淺色背景" style="display:none">淺色</button>
     <button id="edt-gallery-add" title="新增詳述圖片" style="display:none">+ 圖片</button>
     <input  type="file" id="edt-gallery-file" accept="image/*" multiple style="display:none">
@@ -636,7 +636,7 @@
 
     coverAddBtn.textContent = '上傳中…';
     try {
-      p.cover = await uploadToCloudinary(file);
+      p.cover = await uploadCoverMedia(file);
       saveAll();
       renderDetail(p.slug);
     } catch (err) {
@@ -999,8 +999,27 @@
     return { url: data.secure_url, ratio: (data.width > 0 && data.height > 0) ? data.width / data.height : undefined };
   }
 
+  /* Cover accepts either an image or a video from the same file picker —
+     the accept="image/*,video/*" inputs let the OS's own picker filter
+     for both, and this just routes to whichever uploader actually
+     matches the file so every cover-upload entry point (toolbar quick
+     add, the project-edit modal, the detail page's own replace panel)
+     shares one path instead of three copies of the same branch. */
+  async function uploadCoverMedia(file) {
+    if (file.type.startsWith('video/')) {
+      const { url } = await uploadVideoToCloudinary(file);
+      return url;
+    }
+    return uploadToCloudinary(file);
+  }
+
+
   function coverBg(p, w = 800) {
-    const url = p.cover ? cloudinaryUrl(p.cover, w) : null;
+    // A CSS background-image can't play a video — use its auto-generated
+    // still-frame thumbnail here instead (see coverVideoPosterUrl in
+    // app.js); actual video playback only happens on the real detail
+    // page's own cover slot.
+    const url = p.cover ? (isVideoUrl(p.cover) ? coverVideoPosterUrl(p.cover, w) : cloudinaryUrl(p.cover, w)) : null;
     return url
       ? `background:${p.bg};background-image:url('${url}');background-size:cover;background-position:center`
       : `background:${p.bg}`;
@@ -1026,7 +1045,7 @@
               ${!p.cover ? '<span class="pem-cover-ph">封面圖片</span>' : ''}
             </div>
             <div class="pem-cover-actions">
-              <label class="pem-upload-label"><span>上傳封面圖</span><input type="file" id="pem-file" accept="image/*" hidden></label>
+              <label class="pem-upload-label"><span>上傳封面圖/影片</span><input type="file" id="pem-file" accept="image/*,video/*" hidden></label>
               ${p.cover ? '<button class="pem-remove-cover">移除圖片</button>' : ''}
             </div>
           </div>
@@ -1060,7 +1079,7 @@
       labelSpan.textContent = '上傳中…';
       uploadLabel.style.pointerEvents = 'none';
       try {
-        p.cover = await uploadToCloudinary(this.files[0]);
+        p.cover = await uploadCoverMedia(this.files[0]);
         preview.style.cssText = coverBg(p);
         preview.querySelector('.pem-cover-ph')?.remove();
         if (!modal.querySelector('.pem-remove-cover')) {
@@ -1070,9 +1089,9 @@
           modal.querySelector('.pem-cover-actions').appendChild(btn);
         }
       } catch (e) {
-        alert('圖片上傳失敗，請確認網路連線後再試。');
+        alert('上傳失敗，請確認網路連線後再試。');
       } finally {
-        labelSpan.textContent = '上傳封面圖';
+        labelSpan.textContent = '上傳封面圖/影片';
         uploadLabel.style.pointerEvents = '';
       }
     });
@@ -2814,7 +2833,7 @@
       ph.style.background = p ? p.bg : 'var(--bg2)';
       // Swap cover image
       let img = ph.querySelector('.block-cover-img');
-      const coverUrl = p ? cloudinaryUrl(p.cover, 1639) : null;
+      const coverUrl = p && p.cover ? (isVideoUrl(p.cover) ? coverVideoPosterUrl(p.cover, 1639) : cloudinaryUrl(p.cover, 1639)) : null;
       if (coverUrl) {
         if (!img) {
           img = document.createElement('img');
@@ -3121,16 +3140,20 @@
 
     const panel = document.createElement('div');
     panel.className = 'dc-panel';
+    // Crop (pan/zoom via imgX/Y/Zoom) is an image-only feature — there's
+    // no equivalent for a video cover here, same as gallery videos not
+    // supporting it either, so the button just doesn't apply.
+    const coverIsVideo = isVideoUrl(p.cover);
     panel.innerHTML = `
-      <button class="dc-crop" title="裁切圖片">⊞</button>
-      <button class="dc-replace" title="更換圖片">⟳</button>
-      <input type="file" class="dc-replace-file" accept="image/*" style="display:none">
+      ${coverIsVideo ? '' : '<button class="dc-crop" title="裁切圖片">⊞</button>'}
+      <button class="dc-replace" title="更換圖片/影片">⟳</button>
+      <input type="file" class="dc-replace-file" accept="image/*,video/*" style="display:none">
       <button class="dc-del" title="移除主圖">✕</button>`;
     frame.appendChild(panel);
     panel.addEventListener('mousedown', e => e.stopPropagation());
     panel.addEventListener('click', e => e.stopPropagation());
 
-    panel.querySelector('.dc-crop').addEventListener('click', e => {
+    panel.querySelector('.dc-crop')?.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
       const img = frame.querySelector('.dc-img');
       if (!img) return;
@@ -3157,7 +3180,7 @@
       if (!file) return;
       replaceBtn.textContent = '…';
       try {
-        p.cover = await uploadToCloudinary(file);
+        p.cover = await uploadCoverMedia(file);
         p.coverImgX = p.coverImgY = p.coverImgZoom = null;
         saveAll();
         renderDetail(p.slug);
@@ -4881,6 +4904,7 @@
         e.preventDefault(); e.stopPropagation();
         const proj = projects.find(x => x.slug === b.projectSlug);
         if (!proj?.cover) return;
+        if (isVideoUrl(proj.cover)) { alert('影片封面不支援裁切。'); return; }
         openCropModal({
           imageUrl: cloudinaryUrl(proj.cover, 1400),
           ratio: b.w / b.h,

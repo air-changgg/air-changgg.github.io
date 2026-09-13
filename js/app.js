@@ -595,6 +595,25 @@ function cloudinaryUrl(url, w) {
   return url.replace('/upload/', `/upload/w_${w},f_auto/`);
 }
 
+/* A cover can now be an uploaded video (see uploadCoverMedia in
+   editor.js) as well as an image — its resource type is recoverable
+   straight from its own Cloudinary URL (/video/upload/ vs
+   /image/upload/, the delivery path Cloudinary itself uses to
+   distinguish them), so no separate p.coverIsVideo flag is needed just
+   to remember which one a given p.cover is. */
+function isVideoUrl(url) {
+  return /\/video\/upload\//.test(String(url || ''));
+}
+
+/* Contexts that only need a static preview of a video cover (the home
+   grid card, the hero slideshow background, the hover-preview
+   thumbnail) rather than actual playback — Cloudinary generates a
+   still-frame JPG from any uploaded video automatically just by
+   requesting its own URL with the extension swapped to .jpg. */
+function coverVideoPosterUrl(url, w) {
+  return cloudinaryUrl(url.replace(/\.\w+$/, '.jpg'), w);
+}
+
 /* Extracts a usable Vimeo embed URL from whatever a user might paste:
    - the full <iframe ...> embed code Vimeo's "Embed" panel gives you —
      used as-is (its src already carries the ?h=<hash> private-video
@@ -699,7 +718,7 @@ function buildHeroV1HTML() {
   return `
   <div class="home-hero" id="hero-section">
     ${slides.map((p, i) => {
-      const coverUrl = cloudinaryUrl(p.cover, 1400);
+      const coverUrl = p.cover ? (isVideoUrl(p.cover) ? coverVideoPosterUrl(p.cover, 1400) : cloudinaryUrl(p.cover, 1400)) : null;
       const bg = coverUrl
         ? `background:${p.bg};background-image:url('${coverUrl}');background-size:cover;background-position:center`
         : `background:${p.bg}`;
@@ -811,7 +830,7 @@ function buildProjectsSectionHTML() {
     const p    = projects.find(x => x.slug === b.projectSlug);
     const name = p ? p.name     : '';
     const cat  = p ? p.category : '';
-    const coverUrl  = p ? cloudinaryUrl(p.cover, 1639) : null;
+    const coverUrl  = p && p.cover ? (isVideoUrl(p.cover) ? coverVideoPosterUrl(p.cover, 1639) : cloudinaryUrl(p.cover, 1639)) : null;
     const phBg      = p ? p.bg : 'var(--bg2)';
     const imgEl     = coverUrl
       ? `<img class="block-cover-img" src="${coverUrl}" draggable="false">`
@@ -1192,7 +1211,7 @@ document.addEventListener('mousemove', e => {
       projHoverRow = row;
       const proj = projects.find(p => p.slug === row.dataset.projLink);
       const el = ensureProjHoverPreviewEl();
-      el.style.backgroundImage = proj?.cover ? `url(${cloudinaryUrl(proj.cover, 400)})` : 'none';
+      el.style.backgroundImage = proj?.cover ? `url(${isVideoUrl(proj.cover) ? coverVideoPosterUrl(proj.cover, 400) : cloudinaryUrl(proj.cover, 400)})` : 'none';
       // ±3% per appearance, same random factor on both dimensions so
       // the image doesn't stretch — a little size variation each time
       // so it doesn't feel mechanically identical row to row.
@@ -1280,7 +1299,7 @@ function buildHeroV2HTML() {
     .filter(Boolean);
 
   const slidesHtml = slideProjects.map((p, i) => {
-    const url = p.cover ? cloudinaryUrl(p.cover, 1920) : null;
+    const url = p.cover ? (isVideoUrl(p.cover) ? coverVideoPosterUrl(p.cover, 1920) : cloudinaryUrl(p.cover, 1920)) : null;
     const bg  = url
       ? `background:${p.bg};background-image:url('${url}');background-size:cover;background-position:center`
       : `background:${p.bg}`;
@@ -2042,7 +2061,13 @@ function renderDetail(slug) {
   const next = projects[(idx + 1) % projects.length];
 
   const number = String(idx + 1).padStart(3, '0');
-  const coverUrl = p.cover ? cloudinaryUrl(p.cover, 2400) : null;
+  // A video cover is delivered raw/untransformed here, same reasoning
+  // as gallery videos (js/app.js's cloudinaryUrl doc comment) — video
+  // transformations have their own separate cost/limits, and this cover
+  // is shown at a fixed frame size anyway rather than needing a
+  // specific delivered pixel width the way a plain <img> does.
+  const coverIsVideo = p.cover && isVideoUrl(p.cover);
+  const coverUrl = p.cover ? (coverIsVideo ? p.cover : cloudinaryUrl(p.cover, 2400)) : null;
   const gallery = p.gallery || [];
 
   const galleryHtml = gallery.map(g => {
@@ -2106,7 +2131,9 @@ function renderDetail(slug) {
 
   setPage(`
 <div class="page detail-page${p.detailDark ? ' dark' : ''}">
-  ${coverUrl ? `<div class="detail-cover-img"><div class="dc-frame"><img class="dc-img" src="${coverUrl}" alt="${p.name}" draggable="false"></div></div>` : ''}
+  ${coverUrl ? `<div class="detail-cover-img"><div class="dc-frame">${coverIsVideo
+    ? `<video class="dc-video" src="${coverUrl}" autoplay muted loop playsinline preload="auto"></video>`
+    : `<img class="dc-img" src="${coverUrl}" alt="${p.name}" draggable="false">`}</div></div>` : ''}
 
   <div class="detail-split">
     <div class="detail-left">
@@ -2197,7 +2224,7 @@ function renderDetail(slug) {
     // per-video gb-autoplay toggle. Muted, so this never runs into the
     // browser's no-sound-autoplay block; .catch is just a safety net
     // for the rare browser that blocks it anyway.
-    document.querySelectorAll('.gallery-video-frame video[autoplay]').forEach(v => v.play().catch(() => {}));
+    document.querySelectorAll('.gallery-video-frame video[autoplay], .dc-frame video[autoplay]').forEach(v => v.play().catch(() => {}));
   });
 }
 
