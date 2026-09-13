@@ -621,6 +621,24 @@ function vimeoEmbedUrl(input) {
   return null;
 }
 
+/* The actual video's own width/height, via Vimeo's public oEmbed
+   endpoint (no API key needed, CORS-open) — used to size the gallery's
+   video frame to match instead of assuming 16:9, which otherwise
+   letterboxes/pillarboxes *inside* Vimeo's own player (its own gray
+   bars) whenever the real video isn't 16:9. Returns null on any
+   failure (private-without-hash video, network error, unexpected
+   response shape, ...) — callers should fall back to a plain 16:9 box. */
+async function fetchVimeoRatio(embedUrl) {
+  try {
+    const res = await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(embedUrl)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data.width > 0 && data.height > 0) ? data.width / data.height : null;
+  } catch {
+    return null;
+  }
+}
+
 /* Position + scale an <img> so the natural-image point (imgX%, imgY%) lands
    exactly at the container's center, magnified by zoom. This is what the crop
    modal's preview assumes ("window center = imgX/imgY"); object-position's
@@ -2032,7 +2050,7 @@ function renderDetail(slug) {
       const embed = vimeoEmbedUrl(g.vimeoUrl);
       return `
     <div class="gallery-item gallery-item-video" data-gallery-id="${g.id}">
-      <div class="gallery-video-frame">
+      <div class="gallery-video-frame" style="aspect-ratio:${g.ratio || 16/9}">
         ${embed
           ? `<iframe src="${embed}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`
           : `<div class="gallery-video-empty">尚未設定有效的 Vimeo 連結</div>`}

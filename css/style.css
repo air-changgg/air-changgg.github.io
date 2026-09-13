@@ -1801,13 +1801,20 @@ body:not(.editor-active) .info-proj-row[data-proj-link]:hover .itr-date {
   display: block;
 }
 
-/* Vimeo embed — fixed 16:9 via the classic padding-bottom trick, since an
-   <iframe> (unlike an <img>) has no natural intrinsic height to size off
-   of the way the rest of the gallery list does. */
+/* Vimeo embed — sized to the actual video's own aspect ratio (g.ratio,
+   fetched from Vimeo's oEmbed endpoint when the video is added — see
+   editor.js) via the aspect-ratio property, same convention as a
+   cropped gallery image (.gallery-item-cropped). Without this, a video
+   that isn't 16:9 gets letterboxed/pillarboxed *inside* Vimeo's own
+   player to fit our box, showing the player's own gray bars down the
+   sides — matching the container to the real ratio avoids that
+   entirely rather than trying to crop/hide it. Falls back to 16:9
+   inline (see the aspect-ratio style in app.js) if the ratio couldn't
+   be fetched. background here is just the brief flash before the
+   iframe loads, not a letterbox color. */
 .gallery-video-frame {
   position: relative;
   width: 100%;
-  padding-bottom: 56.25%;
   background: var(--bg2);
 }
 

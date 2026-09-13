@@ -668,7 +668,7 @@
     }
   });
 
-  galleryVideoAddBtn.addEventListener('click', () => {
+  galleryVideoAddBtn.addEventListener('click', async () => {
     const p = getCurrentDetailProject();
     if (!p) return;
     const url = prompt('貼上 Vimeo 影片連結，或從 Vimeo「嵌入」面板複製的整段 <iframe> 程式碼都可以：');
@@ -676,7 +676,11 @@
     const embed = vimeoEmbedUrl(url);
     if (!embed) { alert('看起來不是有效的 Vimeo 連結或嵌入碼，請確認格式。'); return; }
     if (!p.gallery) p.gallery = [];
-    p.gallery.push({ id: Date.now() + Math.random(), type: 'video', vimeoUrl: embed });
+    // Fetch the video's real aspect ratio so its frame doesn't default
+    // to 16:9 and force Vimeo's own player to letterbox/pillarbox a
+    // differently-shaped video inside it (see fetchVimeoRatio in app.js).
+    const ratio = await fetchVimeoRatio(embed);
+    p.gallery.push({ id: Date.now() + Math.random(), type: 'video', vimeoUrl: embed, ratio: ratio || undefined });
     saveAll();
     renderDetail(p.slug);
   });
@@ -3276,13 +3280,14 @@
         el.appendChild(panel);
         panel.addEventListener('mousedown', e => e.stopPropagation());
         panel.addEventListener('click', e => e.stopPropagation());
-        panel.querySelector('.gb-replace').addEventListener('click', e => {
+        panel.querySelector('.gb-replace').addEventListener('click', async e => {
           e.preventDefault(); e.stopPropagation();
           const url = prompt('貼上新的 Vimeo 影片連結或 <iframe> 嵌入碼：', g.vimeoUrl || '');
           if (!url) return;
           const embed = vimeoEmbedUrl(url);
           if (!embed) { alert('看起來不是有效的 Vimeo 連結或嵌入碼，請確認格式。'); return; }
           g.vimeoUrl = embed;
+          g.ratio = (await fetchVimeoRatio(embed)) || undefined;
           saveAll();
           renderDetail(p.slug);
         });
