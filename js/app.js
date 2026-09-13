@@ -2062,7 +2062,7 @@ function renderDetail(slug) {
     <div class="gallery-item gallery-item-video" data-gallery-id="${g.id}">
       <div class="gallery-video-frame" style="aspect-ratio:${g.ratio || 16/9}">
         ${g.url
-          ? `<video src="${g.url}" controls playsinline preload="metadata"></video>`
+          ? `<video src="${g.url}" controls autoplay muted loop playsinline preload="auto"></video>`
           : `<div class="gallery-video-empty">尚未上傳影片</div>`}
       </div>
     </div>`;
@@ -2182,6 +2182,14 @@ function renderDetail(slug) {
     if (albumEl) startAlbumCarousel(albumEl);
     initGalleryRevealObserver();
     applyMobileOutroOrder();
+    // The `autoplay` attribute alone isn't reliably honored on a <video>
+    // inserted via innerHTML (as every render here is) rather than
+    // present at initial document parse — some engines only actually
+    // start playback if it's kicked off from script, even though the
+    // attribute and muted state are both set correctly. Muted, so this
+    // never runs into the browser's no-sound-autoplay block; .catch is
+    // just a safety net for the rare browser that blocks it anyway.
+    document.querySelectorAll('.gallery-video-frame video').forEach(v => v.play().catch(() => {}));
   });
 }
 
