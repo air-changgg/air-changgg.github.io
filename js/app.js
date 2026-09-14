@@ -2241,10 +2241,16 @@ function renderDetail(slug) {
 function applyMobileOutroOrder() {
   const isMobile = window.matchMedia('(max-width: 768px)').matches;
   const album = document.querySelector('.project-album');
+  // .full-project-link doesn't exist at all when p.linkHidden is set —
+  // that must not block moving the album too. It used to (link was
+  // part of the same required-elements guard below), so any project
+  // with the Full Project link turned off never got its album moved to
+  // the bottom on mobile at all, leaving it stuck up near the top in
+  // .detail-left's original desktop position instead.
   const link = document.querySelector('.full-project-link');
   const outroCanvas = document.getElementById('outro-canvas');
   const detailSplit = document.querySelector('.detail-split');
-  if (!album || !link || !outroCanvas || !detailSplit) return;
+  if (!album || !outroCanvas || !detailSplit) return;
   if (isMobile) {
     let wrap = document.getElementById('mobile-outro-wrap');
     if (!wrap) {
@@ -2254,10 +2260,10 @@ function applyMobileOutroOrder() {
       detailSplit.appendChild(wrap);
     }
     wrap.appendChild(album);
-    wrap.appendChild(link);
+    if (link) wrap.appendChild(link);
   } else {
     outroCanvas.insertBefore(album, outroCanvas.firstChild);
-    outroCanvas.appendChild(link);
+    if (link) outroCanvas.appendChild(link);
     document.getElementById('mobile-outro-wrap')?.remove();
   }
 }

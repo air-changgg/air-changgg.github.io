@@ -3860,6 +3860,13 @@ body:not(.editor-active) .info-proj-row[data-proj-link]:hover .itr-date {
     width: 45% !important;
     flex: 0 0 45%;
   }
+  /* p.linkHidden means .full-project-link never rendered at all, so the
+     album is the only thing in here — let it take the full row instead
+     of sitting at a cramped 45% next to empty space. */
+  .mobile-outro-wrap .project-album:only-child {
+    width: 100% !important;
+    flex: 1 1 100%;
+  }
   .mobile-outro-wrap .full-project-link {
     width: auto !important;
     flex: 1 1 auto;
