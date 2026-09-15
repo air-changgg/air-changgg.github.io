@@ -242,16 +242,18 @@ body.nav-dark .nav-links a { color: #B0AFA8; }
 
 .project-card-overlay {
   position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
   display: flex;
-  align-items: flex-end;
-  padding: 1.25rem;
+  align-items: center;
+  padding: 0.9rem 1.25rem;
   transition: background 300ms var(--ease);
 }
 
 .project-block:hover .project-card-overlay {
-  background: rgba(0,0,0,0.32);
+  background: var(--accent);
 }
 
 .project-card-info {
