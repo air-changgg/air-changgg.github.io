@@ -230,6 +230,26 @@ body.nav-dark .nav-links a { color: #B0AFA8; }
   transform: none;
 }
 
+/* Whole-card whitening wash on hover, separate from the orange name bar
+   below (.project-card-overlay) — a pseudo-element rather than another
+   real child, so it needs an explicit z-index to sit above the cover
+   photo (.project-card-ph is a real positioned child, and this
+   ::before is otherwise first in paint order) but still under the
+   orange bar. */
+.project-block::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(255,255,255,0);
+  transition: background 300ms var(--ease);
+  pointer-events: none;
+}
+
+.project-block:hover::before {
+  background: rgba(255,255,255,0.35);
+}
+
 /* Editing needs every block visible and steady regardless of scroll
    position — an element mid-fade or still hidden would be impossible to
    select, drag, or resize. */
@@ -245,6 +265,7 @@ body.nav-dark .nav-links a { color: #B0AFA8; }
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 2;
   background: transparent;
   display: flex;
   align-items: center;
