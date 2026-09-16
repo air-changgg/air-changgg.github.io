@@ -270,10 +270,10 @@ body.nav-dark .nav-links a { color: #B0AFA8; }
 .project-card-name {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   color: #fff;
   display: block;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.06em;
 }
 
 /* Placeholder block inside project card */
