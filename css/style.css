@@ -247,7 +247,7 @@ body.nav-dark .nav-links a { color: #B0AFA8; }
 }
 
 .project-block:hover::before {
-  background: rgba(255,255,255,0.35);
+  background: rgba(0,0,0,0.35);
 }
 
 /* Editing needs every block visible and steady regardless of scroll
