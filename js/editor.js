@@ -2848,9 +2848,7 @@
       }
     }
     const nameEl = el.querySelector('.project-card-name');
-    const catEl  = el.querySelector('.project-card-cat');
     if (nameEl) nameEl.textContent = p ? p.name : '';
-    if (catEl)  catEl.textContent  = p ? p.category : '';
     if (p) {
       el.setAttribute('href', `/projects/${p.slug}`);
       el.setAttribute('aria-label', p.name);

@@ -829,7 +829,6 @@ function buildProjectsSectionHTML() {
   return blocks.map(b => {
     const p    = projects.find(x => x.slug === b.projectSlug);
     const name = p ? p.name     : '';
-    const cat  = p ? p.category : '';
     const coverUrl  = p && p.cover ? (isVideoUrl(p.cover) ? coverVideoPosterUrl(p.cover, 1639) : cloudinaryUrl(p.cover, 1639)) : null;
     const phBg      = p ? p.bg : 'var(--bg2)';
     const imgEl     = coverUrl
@@ -841,7 +840,6 @@ function buildProjectsSectionHTML() {
       <div class="project-card-overlay">
         <div class="project-card-info">
           <span class="project-card-name">${name}</span>
-          <span class="project-card-cat">${cat}</span>
         </div>
       </div>`;
 
